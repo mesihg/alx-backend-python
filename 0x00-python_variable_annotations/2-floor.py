@@ -2,6 +2,6 @@
 """Task 2 floor module"""
 
 
-def floor(n: float) -> float:
+def floor(n: float) -> int:
     """floor of a float"""
     return int(n)
