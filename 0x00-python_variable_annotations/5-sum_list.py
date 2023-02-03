@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Task 5 to string module"""
+"""Task 5 sum of floats module"""
 from typing import List
 
 
