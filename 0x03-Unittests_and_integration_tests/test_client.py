@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import patch
 from parameterized import parameterized
+import client
 from client import GithubOrgClient
 
 
