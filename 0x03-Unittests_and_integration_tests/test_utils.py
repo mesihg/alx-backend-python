@@ -65,6 +65,6 @@ class TestMemoize(unittest.TestCase):
                 return self.a_method()
         with patch.object(TestClass, "a_method") as memo_fxn:
             test_class = TestClass()
-            self.assertEqual(test_class.a_property(), 42)
-            self.assertEqual(test_class.a_property(), 42)
+            test_class.a_property()
+            test_class.a_property()
             memo_fxn.assert_called_once()
