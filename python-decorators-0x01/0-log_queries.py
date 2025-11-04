@@ -1,21 +1,9 @@
 import os
 import sqlite3
 import functools
-import logging
 from datetime import datetime
 
 #### decorator to log SQL queries
-
-# setup logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-# add a console handler if not setup globally
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("[%(levelname)s] %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 def log_queries(func):
     """Decorator to log SQL queries or function execution"""
@@ -24,9 +12,9 @@ def log_queries(func):
         sql_query = kwargs.get('query') or (args[0] if args else None)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if sql_query:
-            logger.info(f"[{timestamp}] Executing Query: {sql_query}")
+            print(f"[{timestamp}] Executing Query: {sql_query}")
         else:
-            logger.info(f"[{timestamp}] Executing function: {func.__name__}")
+            print(f"[{timestamp}] Executing function: {func.__name__}")
         return func(*args, **kwargs)
     return wrapper
 
