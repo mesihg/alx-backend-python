@@ -16,3 +16,13 @@ class DatabaseConnection:
             self.conn.close()
             print(f"Database connection closed.")
         return False
+    
+if __name__ == "__main__":
+    query = "SELECT * FROM users"
+
+    with DatabaseConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        results_list = [result for result in results]
+        print(results_list)
