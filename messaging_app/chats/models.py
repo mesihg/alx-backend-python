@@ -12,6 +12,10 @@ class User(AbstractUser):
         editable=False,
         db_index=True
     )
+    password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+
     email = models.EmailField(
         unique=True,
         db_index=True,
