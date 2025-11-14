@@ -20,11 +20,6 @@ class MessageSerializer(serializers.ModelSerializer):
 
     message_body = serializers.CharField(required=True)
 
-    def validate_message_body(self, value):
-        if not value or value.strip() == "":
-            raise serializers.ValidationError("Message body cannot be empty.")
-        return value
-
     class Meta:
         model = Message
         fields = [
