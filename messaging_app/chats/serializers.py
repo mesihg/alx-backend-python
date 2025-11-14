@@ -18,6 +18,8 @@ class UserSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
 
+    message_body = serializers.CharField(required=True)
+
     def validate_message_body(self, value):
         if not value or value.strip() == "":
             raise serializers.ValidationError("Message body cannot be empty.")
