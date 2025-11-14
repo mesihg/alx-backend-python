@@ -1,9 +1,9 @@
 import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractUser
 
 
-class User(AbstractBaseUser):
+class User(AbstractUser):
     """Custom User model which extends AbstractUser"""
 
     user_id = models.UUIDField(
@@ -12,6 +12,9 @@ class User(AbstractBaseUser):
         editable=False,
         db_index=True
     )
+    password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
 
     email = models.EmailField(
         unique=True,
