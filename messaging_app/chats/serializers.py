@@ -18,6 +18,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+
     class Meta:
         model = Message
         fields = [
@@ -31,6 +33,11 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationSerializer(serializers.ModelSerializer):
+    message_body = serializers.CharField()
+    conversation = serializers.PrimaryKeyRelatedField(
+        queryset=Conversation.objects.all()
+    )
+
     class Meta:
         model = Conversation
         fields = [
