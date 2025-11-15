@@ -1,4 +1,5 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path, include
 from . import views
 
 router = DefaultRouter()
@@ -6,4 +7,7 @@ router.register(r"conversations", views.ConversationViewSet,
                 basename="conversations")
 router.register(r"messages", views.MessageViewSet, basename="messages")
 
-urlpatterns = router.urls
+
+urlpatterns = [
+    path("", include(router.urls))
+]
