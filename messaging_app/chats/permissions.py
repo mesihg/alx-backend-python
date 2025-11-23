@@ -42,10 +42,18 @@ class IsParticipantOfConversation(permissions.BasePermission):
             if conversation:
                 return obj.conversation.participants.filter(id=user.id).exists()
             return False
-        if conversation:
-            return obj.conversation.participants.filter(id=user.id).exists()
-        if participants:
-            return participants.filter(id=user.id).exists()
+        if request.method == "POST":
+            if conversation:
+                return obj.conversation.participants.filter(id=user.id).exists()
+            if participants:
+                return participants.filter(id=user.id).exists()
+            return False
+        if request.method in ["PUT", "PATCH", "DELETE"]:
+            if conversation:
+                return obj.conversation.participants.filter(id=user.id).exists()
+            if participants:
+                return participants.filter(id=user.id).exists()
+            return False
         return False
 
 
@@ -59,4 +67,9 @@ class IsMessageOwnerOrReadOnly(permissions.BasePermission):
         user = request.user
         if request.method in permissions.SAFE_METHODS:
             return obj.conversation.participants.filter(id=user.id).exists()
-        return obj.sender == user
+
+        if request.method == "POST":
+            return obj.conversation.participants.filter(id=user.id).exists()
+        if request.method in ["PUT", "PATCH", "DELETE"]:
+            return obj.sender == user
+        return False
