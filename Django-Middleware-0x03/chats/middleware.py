@@ -2,8 +2,10 @@ import logging
 from datetime import datetime
 import os
 from django.conf import settings
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.utils import timezone
+from collections import defaultdict, deque
+import time
 
 
 class RequestLoggingMiddleware:
@@ -90,6 +92,118 @@ class RestrictAccessByTimeMiddleware:
             </html>
             """
             return HttpResponseForbidden(forbidden_message)
+
+        response = self.get_response(request)
+
+        return response
+
+
+class OffensiveLanguageMiddleware:
+    """
+    Middleware that limits the number of chat messages a user can send within a certain time window,
+    based on their IP address. Implements rate limiting for POST requests to prevent spam.
+    """
+
+    def __init__(self, get_response):
+        """
+        Initialize the middleware.
+        """
+        self.get_response = get_response
+
+        self.max_messages_per_minute = 5
+        self.time_window = 60
+
+        self.ip_requests = defaultdict(deque)
+
+        self.last_cleanup = time.time()
+        self.cleanup_interval = 300
+
+    def get_client_ip(self, request):
+        """
+        Get the client's IP address from the request.
+        """
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        return ip
+
+    def cleanup_old_requests(self):
+        """
+        Remove old request timestamps that are outside the time window.
+        """
+        current_time = time.time()
+        cutoff_time = current_time - self.time_window
+
+        for ip, timestamps in list(self.ip_requests.items()):
+            while timestamps and timestamps[0] < cutoff_time:
+                timestamps.popleft()
+
+            if not timestamps:
+                del self.ip_requests[ip]
+
+    def is_rate_limited(self, ip_address):
+        """
+        Check if the IP address has exceeded the rate limit.
+        """
+        current_time = time.time()
+        cutoff_time = current_time - self.time_window
+
+        timestamps = self.ip_requests[ip_address]
+
+        while timestamps and timestamps[0] < cutoff_time:
+            timestamps.popleft()
+
+        return len(timestamps) >= self.max_messages_per_minute
+
+    def record_request(self, ip_address):
+        """
+        Record a new request for the IP address.
+        """
+        current_time = time.time()
+        self.ip_requests[ip_address].append(current_time)
+
+    def __call__(self, request):
+        """
+        Process the request and check for rate limiting on POST requests to messaging endpoints.
+        """
+        current_time = time.time()
+        if current_time - self.last_cleanup > self.cleanup_interval:
+            self.cleanup_old_requests()
+            self.last_cleanup = current_time
+
+        messaging_paths = [
+            '/api/v1/messages/', '/api/v1/conversations/', '/messages/', '/conversations/']
+        is_messaging_post = (
+            request.method == 'POST' and
+            any(request.path.startswith(path) for path in messaging_paths)
+        )
+
+        if is_messaging_post:
+            client_ip = self.get_client_ip(request)
+
+            if self.is_rate_limited(client_ip):
+                rate_limit_message = f"""
+                <html>
+                <head><title>Rate Limit Exceeded</title></head>
+                <body>
+                    <h1>429 Too Many Requests</h1>
+                    <p>You have exceeded the rate limit for sending messages.</p>
+                    <p>Limit: {self.max_messages_per_minute} messages per minute</p>
+                    <p>Please wait before sending another message.</p>
+                    <p>Your IP: {client_ip}</p>
+                    <p>Time: {datetime.now().strftime('%H:%M:%S')}</p>
+                </body>
+                </html>
+                """
+                response = HttpResponse(rate_limit_message, status=429)
+                # Suggest retry time
+                response['Retry-After'] = str(self.time_window)
+                return response
+
+            self.record_request(client_ip)
 
         response = self.get_response(request)
 
