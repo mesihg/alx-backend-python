@@ -1,11 +1,13 @@
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, filters, permissions
 from rest_framework.response import Response
 from .models import Message, Conversation
 from .serializers import MessageSerializer, ConversationSerializer
+from .permissions import IsParticipantOfConversation
 
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
     queryset = Message.objects.all()
 
     filter_backends = [filters.OrderingFilter]
@@ -28,6 +30,8 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
+    permission_classes = [permissions.IsAuthenticated,
+                          IsParticipantOfConversation]
     queryset = Conversation.objects.all()
 
     filter_backends = [filters.OrderingFilter]
