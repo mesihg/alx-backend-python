@@ -208,3 +208,103 @@ class OffensiveLanguageMiddleware:
         response = self.get_response(request)
 
         return response
+
+
+class RolepermissionMiddleware:
+    """
+    Middleware that checks the user's role before allowing access to specific actions.
+    Only admin and moderator users are allowed to perform certain privileged operations.
+    """
+
+    def __init__(self, get_response):
+        """
+        Initialize the middleware.
+        """
+        self.get_response = get_response
+
+        self.allowed_roles = ['admin', 'moderator']
+
+        self.protected_paths = [
+            '/admin/',
+            '/api/v1/admin/',
+            '/api/v1/users/',
+            '/api/v1/conversations/delete/',
+            '/api/v1/messages/delete/',
+            '/api/v1/moderation/',
+        ]
+
+        self.protected_methods = ['POST', 'PUT', 'PATCH', 'DELETE']
+
+    def is_protected_path(self, request_path):
+        """
+        Check if the request path requires privileged access.
+        """
+        return any(request_path.startswith(path) for path in self.protected_paths)
+
+    def is_protected_operation(self, request):
+        """
+        Check if the request is a protected operation that requires role check.
+        """
+        if self.is_protected_path(request.path):
+            return True
+
+        if (request.method in self.protected_methods and
+                request.path.startswith('/api/v1/')):
+            allowed_for_all = [
+                '/api/v1/conversations/',
+                '/api/v1/messages/',
+            ]
+
+            if any(request.path == path or
+                   (request.path.startswith(path) and request.method == 'POST')
+                   for path in allowed_for_all):
+                return False
+
+            return True
+
+        return False
+
+    def has_required_role(self, user):
+        """
+        Check if the user has the required role for privileged operations.
+        """
+        if not user.is_authenticated:
+            return False
+
+        return hasattr(user, 'role') and user.role in self.allowed_roles
+
+    def __call__(self, request):
+        """
+        Process the request and check user role for protected operations.
+        """
+        if self.is_protected_operation(request):
+            if not self.has_required_role(request.user):
+                if not request.user.is_authenticated:
+                    reason = "Authentication required"
+                    user_info = "Not authenticated"
+                else:
+                    reason = "Insufficient privileges"
+                    user_role = getattr(request.user, 'role', 'unknown')
+                    user_info = f"User role: {user_role}"
+
+                forbidden_message = f"""
+                <html>
+                <head><title>Access Denied</title></head>
+                <body>
+                    <h1>403 Forbidden</h1>
+                    <p><strong>Access Denied:</strong> {reason}</p>
+                    <p>This operation requires admin or moderator privileges.</p>
+                    <p><strong>Required roles:</strong> {', '.join(self.allowed_roles)}</p>
+                    <p><strong>Your status:</strong> {user_info}</p>
+                    <p><strong>Requested path:</strong> {request.path}</p>
+                    <p><strong>Method:</strong> {request.method}</p>
+                    <p><strong>Time:</strong> {datetime.now().strftime('%H:%M:%S')}</p>
+                </body>
+                </html>
+                """
+
+                return HttpResponseForbidden(forbidden_message)
+
+        response = self.get_response(request)
+
+        return response
