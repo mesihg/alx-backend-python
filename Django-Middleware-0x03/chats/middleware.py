@@ -18,10 +18,7 @@ class RequestLoggingMiddleware:
         """
         self.get_response = get_response
 
-        log_dir = os.path.join(settings.BASE_DIR, 'logs')
-        os.makedirs(log_dir, exist_ok=True)
-
-        log_file = os.path.join(log_dir, 'requests.log')
+        log_file = os.path.join(settings.BASE_DIR, 'requests.log')
 
         self.logger = logging.getLogger('request_logger')
         self.logger.setLevel(logging.INFO)
