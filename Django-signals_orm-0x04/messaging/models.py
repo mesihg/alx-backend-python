@@ -20,3 +20,47 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.sender} to {self.receiver}: {self.content[:50]}..."
     
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('message', 'New Message'),
+        ('reply', 'Message Reply'),
+        ('edit', 'Message Edited'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+
+    content = models.TextField()
+
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES,
+        default='message'
+    )
+
+    is_read = models.BooleanField(default=False)
+    parent_message = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies'
+
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    
+
+
+    class Meta:
+        ordering = ['-created_at']
+    def __str__(self):
+        return f"Notification for {self.user}"
