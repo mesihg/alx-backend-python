@@ -16,10 +16,25 @@ class Message(models.Model):
     )
     content = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
+    is_edited = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.sender} to {self.receiver}: {self.content[:50]}..."
     
+class MessageHistory(models.Model):
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='message_history',
+    )
+    old_content = models.TextField()
+    edited_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-edited_at']
+    def __str__(self):
+        return f"Edit history for message {self.message} at {self.edited_at}"
+
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
