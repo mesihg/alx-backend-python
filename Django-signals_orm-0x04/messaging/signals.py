@@ -28,6 +28,7 @@ def log_message_edit(sender, instance, **kwargs):
             if old_message.content != instance.content:
                 MessageHistory.objects.create(
                     message=old_message,
+                    edited_by=instance.sener,
                     old_content=old_message.content
                 )
                 instance.is_edited = True

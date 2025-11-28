@@ -27,6 +27,11 @@ class MessageHistory(models.Model):
         on_delete=models.CASCADE,
         related_name='message_history',
     )
+    edited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='editor'
+    )
     old_content = models.TextField()
     edited_at = models.DateTimeField(default=timezone.now)
 
