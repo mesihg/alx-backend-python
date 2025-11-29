@@ -33,17 +33,35 @@ class Message(models.Model):
 
     content = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
-    is_edited = models.BooleanField(default=False)    
+    is_edited = models.BooleanField(default=False)  
+
+    class Meta:
+        ordering = ['timestamp']
+  
 
     def __str__(self):
         return f"{self.sender} to {self.receiver}: {self.content[:50]}..."
     
+    
     def save(self, *args, **kwargs):
         if self.parent_message and not self.thread_root:
-            self.thread_root = (
-                self.parent_message.thread_root or self.parent_message
-            )
+            self.thread_root = self.parent_message.thread_root or self.parent_message
         super().save(*args, **kwargs)
+
+    def is_thread_starter(self):
+        return self.parent_message is None
+    
+    def get_replies(self):
+        return self.replies.select_related(
+            "sender", "receiver"
+        ).prefetch_related("replies")
+    
+
+    def get_threaded_message(self):
+        return Message.objects.filter(
+            thread_root=self.thread_root or self
+        ).select_related("sender", "receiver")
+    
     
 class MessageHistory(models.Model):
     message = models.ForeignKey(
