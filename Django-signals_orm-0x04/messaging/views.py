@@ -2,7 +2,7 @@ from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-from django.db.models import Q
+from django.views.decorators.cache import cache_page
 from .models import Message
 
 def delete_user(request):
@@ -17,6 +17,7 @@ def delete_user(request):
     except Exception as e:
         return JsonResponse({"error": "An error occurred during account deletion."}, status=500)
 
+@cache_page(60)
 def user_inbox(request):
     unread_message = Message.unread.unread_for_user(request.user).only(
          'id', 'sender__username', 'content', 'timestamp', 'parent_message'
