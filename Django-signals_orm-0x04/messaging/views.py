@@ -13,9 +13,8 @@ def delete_user(request):
     user.delete()
 
 def user_inbox(request):
-    user = request.user
     inbox_messages = Message.objects.filter(
-        Q(sender=user) | Q(receiver=user)
+        Q(sender=request.user) | Q(receiver=request.user)
     ).select_related(
         "sender",
         "receiver",
@@ -68,7 +67,7 @@ def message_thread(request, root_message_id):
         "sender", "receiver", "parent_message"
     ).order_by("timestamp")
     thread_tree = build_thread_tree(thread_queryset)
-    
+
     serialized_data = serialize_message(thread_tree)
 
     return JsonResponse(serialized_data, safe=False)
