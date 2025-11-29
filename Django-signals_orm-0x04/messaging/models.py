@@ -6,10 +6,13 @@ from django.contrib.auth.models import User
 class UnreadMessagesManager(models.Manager):
     def for_user(self, user):
         return self.get_queryset().filter(receiver=user, read=False)
-    def unread_count(self, user):
-        return self.for_user(user).count()
     
 class Message(models.Model):
+
+    objects = models.Manager()
+    unread = UnreadMessagesManager()
+
+
     sender = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -43,10 +46,7 @@ class Message(models.Model):
 
     read = models.BooleanField(default=False)
 
-    objects = models.Manager()
-    
-    unread = UnreadMessagesManager()
-
+   
     class Meta:
         ordering = ['timestamp']
   

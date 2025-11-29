@@ -18,15 +18,22 @@ def delete_user(request):
         return JsonResponse({"error": "An error occurred during account deletion."}, status=500)
 
 def user_inbox(request):
-    inbox_messages = Message.objects.filter(
-        Q(sender=request.user) | Q(receiver=request.user)
+    unread_message = Message.unread.for_user(request.user).only(
+         'id', 'sender__username', 'content', 'timestamp', 'parent_message'
+    ).select_related('sender', 'parent_message')
+
+    read_messages = Message.objects.filter(
+        receiver=request.user,
+        read=True
+    ).only(
+        'id', 'sender__username', 'content', 'timestamp', 'parent_message'
     ).select_related(
         "sender",
         "receiver",
         "thread_root"
-    ).distinct()
+    )[:20]
 
-    return inbox_messages
+    return read_messages
    
 def build_thread_tree(queryset):
     messages_by_id = {msg.id: msg for msg in queryset}
