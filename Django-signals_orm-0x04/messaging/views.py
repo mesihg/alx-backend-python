@@ -18,7 +18,7 @@ def delete_user(request):
         return JsonResponse({"error": "An error occurred during account deletion."}, status=500)
 
 def user_inbox(request):
-    unread_message = Message.unread.for_user(request.user).only(
+    unread_message = Message.unread.unread_for_user(request.user).only(
          'id', 'sender__username', 'content', 'timestamp', 'parent_message'
     ).select_related('sender', 'parent_message')
 
