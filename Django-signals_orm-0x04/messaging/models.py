@@ -2,6 +2,13 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
+
+class UnreadMessagesManager(models.Manager):
+    def for_user(self, user):
+        return self.get_queryset().filter(receiver=user, read=False)
+    def unread_count(self, user):
+        return self.for_user(user).count()
+    
 class Message(models.Model):
     sender = models.ForeignKey(
         User,
@@ -34,6 +41,12 @@ class Message(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     is_edited = models.BooleanField(default=False)  
 
+    read = models.BooleanField(default=False)
+
+    objects = models.Manager()
+    
+    unread = UnreadMessagesManager()
+
     class Meta:
         ordering = ['timestamp']
   
@@ -60,7 +73,6 @@ class Message(models.Model):
         return Message.objects.filter(
             thread_root=self.thread_root or self
         ).select_related("sender", "receiver")
-    
     
 class MessageHistory(models.Model):
     message = models.ForeignKey(
