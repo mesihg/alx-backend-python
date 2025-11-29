@@ -1,9 +1,13 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
+from django.contrib.auth.models import User
 from .models import Message, Notification, MessageHistory
 
 @receiver(post_save, sender=Message)
 def create_notification(sender, instance, created, **kwargs):
+    """
+    A Signal to trigger a notification when a new message instance is created.
+    """
     if created:
         notification_type = 'reply' if instance.parent_message else 'message'
         if notification_type == 'reply':
@@ -21,14 +25,16 @@ def create_notification(sender, instance, created, **kwargs):
 
 @receiver(pre_save, sender=Message)
 def log_message_edit(sender, instance, **kwargs):
-    
+    """
+    A Signal for logging message edits
+    """
     if instance.pk:
         try:
             old_message = Message.objects.get(pk=instance.pk)
             if old_message.content != instance.content:
                 MessageHistory.objects.create(
                     message=old_message,
-                    edited_by=instance.sener,
+                    edited_by=instance.sender,
                     old_content=old_message.content
                 )
                 instance.is_edited = True
@@ -43,3 +49,13 @@ def log_message_edit(sender, instance, **kwargs):
 
         except Message.DoesNotExist:
             pass
+
+@receiver(post_delete, sender=User)
+def cleanup_user_related_data(sender, instance, **kwargs):
+    """
+    A Signal for deleting user-related data
+    """
+    Message.objects.filter(sender=instance).delete()
+    Message.objects.filter(receiver=instance).delete()
+    Notification.objects.filter(user=instance).delete()
+    MessageHistory.objects.filter(edited_by=instance).delete()

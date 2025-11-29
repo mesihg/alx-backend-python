@@ -1,3 +1,10 @@
-from django.shortcuts import render
+from django.contrib.auth import logout
 
-# Create your views here.
+def delete_user(request):
+    """
+    Delete user account and all its related data
+    """
+    user = request.user
+    logout(request)
+    user.delete()
+
