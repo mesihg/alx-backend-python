@@ -1,3 +1,4 @@
+from typing import Iterable
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -14,12 +15,35 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         related_name='received_messages'
     )
+    parent_message = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies'
+
+    )
+    thread_root = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='thread_messages'
+    )
+
     content = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
-    is_edited = models.BooleanField(default=False)
+    is_edited = models.BooleanField(default=False)    
 
     def __str__(self):
         return f"{self.sender} to {self.receiver}: {self.content[:50]}..."
+    
+    def save(self, *args, **kwargs):
+        if self.parent_message and not self.thread_root:
+            self.thread_root = (
+                self.parent_message.thread_root or self.parent_message
+            )
+        super().save(*args, **kwargs)
     
 class MessageHistory(models.Model):
     message = models.ForeignKey(
@@ -68,6 +92,7 @@ class Notification(models.Model):
     )
 
     is_read = models.BooleanField(default=False)
+
     parent_message = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
