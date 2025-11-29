@@ -1,6 +1,7 @@
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from django.db import transaction
 from django.db.models import Q
 from .models import Message
 
@@ -9,8 +10,12 @@ def delete_user(request):
     Delete user account and all its related data
     """
     user = request.user
-    logout(request)
-    user.delete()
+    try:
+        with transaction.atomic():
+            logout(request)
+            user.delete()
+    except Exception as e:
+        return JsonResponse({"error": "An error occurred during account deletion."}, status=500)
 
 def user_inbox(request):
     inbox_messages = Message.objects.filter(
@@ -23,7 +28,6 @@ def user_inbox(request):
 
     return inbox_messages
    
-
 def build_thread_tree(queryset):
     messages_by_id = {msg.id: msg for msg in queryset}
     tree = []
@@ -52,8 +56,6 @@ def serialize_message(message_list):
         }
         serialized_list.append(data)
     return serialized_list
-
-
 
 def message_thread(request, root_message_id):
     try:
