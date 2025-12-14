@@ -1,0 +1,32 @@
+#!/bin/bash
+# Script to scale Django app in Kubernetes and perform load testing
+
+set -e  # Exit immediately if a command fails
+
+DEPLOYMENT_NAME="django-deployment"  # Change this if your deployment has a different name
+NAMESPACE="default"                 # Change if you’re using another namespace
+SERVICE_PORT=8000                   # The port Django app exposes in Kubernetes
+
+echo "Scaling $DEPLOYMENT_NAME to 3 replicas..."
+kubectl scale deployment "$DEPLOYMENT_NAME" --replicas=3 --namespace="$NAMESPACE"
+
+echo "Waiting for pods to be ready..."
+kubectl rollout status deployment/"$DEPLOYMENT_NAME" --namespace="$NAMESPACE"
+
+echo "Current pods:"
+kubectl get pods --namespace="$NAMESPACE" -o wide
+
+echo "Getting service IP..."
+SERVICE_IP=$(minikube service "$DEPLOYMENT_NAME" --url --namespace="$NAMESPACE" | head -n 1)
+
+if [ -z "$SERVICE_IP" ]; then
+    echo "Could not retrieve service IP. Make sure the service is exposed."
+    exit 1
+fi
+echo "Service URL: $SERVICE_IP"
+
+echo "Running load test with wrk..."
+wrk -t4 -c100 -d15s "$SERVICE_IP"
+
+echo "📈 Monitoring resource usage..."
+kubectl top pods --namespace="$NAMESPACE"
