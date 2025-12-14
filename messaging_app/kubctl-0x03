@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Apply updated deployment
+echo "Applying updated blue deployment..."
+kubectl apply -f messaging_app/blue_deployment.yaml
+
+# Monitor rollout status
+echo "Monitoring rollout..."
+kubectl rollout status deployment/django-blue
+
+# Test for downtime during rollout
+echo "Testing application availability..."
+for i in {1..20}; do
+  curl -s http://<your-service-ip-or-domain>/ || echo "Request failed"
+  sleep 1
+done
+
+# Verify current running pods
+echo "Current pods:"
+kubectl get pods -l app=django-blue
